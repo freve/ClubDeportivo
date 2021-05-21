@@ -12,9 +12,12 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,8 +50,56 @@ public class ClubController {
 		
 	}
 	
+	@PutMapping("/actualizar/{id}")
+	public ResponseEntity<?> update(@PathVariable int id, @RequestBody @Valid Club club, BindingResult result){
+		
+		Map <String,Object> map=new HashMap<>();
+		if (result.hasErrors()) {
+			List<FieldError> list=result.getFieldErrors();
+			map.put("Mensaje", "Por favor llene todos los campos");
+			
+			for(FieldError e:list) {
+				map.put(e.getField(), e.getDefaultMessage());
+			}
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.BAD_REQUEST);
+		}
+		
+		Club clubUp=this.club.findById(id).orElse(null);
+		
+		if(clubUp==null) {
+			map.put("mensaje", "el cliente con el ID:"+id+"No existe en la bd");
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.NOT_FOUND);
+		}
+		
+		clubUp.setCiudad(club.getCiudad());
+		clubUp.setDireccion(club.getDireccion());
+		clubUp.setEstadio(club.getEstadio());
+		clubUp.setFoto(club.getFoto());
+		clubUp.setLogo(club.getLogo());
+		clubUp.setNombre(club.getNombre());
+		clubUp.setPais(club.getPais());
+		clubUp.setTelefono(club.getTelefono());
+		
+		
+		try {
+			Club updated=this.club.save(clubUp);
+			map.put("cliente", updated);
+		} catch (DataAccessException e) {
+			map.put("mensaje", "Ha ocurrido un error");
+			map.put("error", e.getMostSpecificCause());
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		map.put("mensaje", "Club actualizado correctament");
+		
+		return new ResponseEntity<Map<String,Object>>(map,HttpStatus.OK);
+		
+	}
+	
+	
 	@PostMapping("/guardar")
-	public ResponseEntity<?> guardar( @RequestBody @Valid Club club, BindingResult result){
+	public ResponseEntity<?> save( @RequestBody @Valid Club club, BindingResult result){
+		
+		
 		Map <String,Object> map=new HashMap<>();
 		if (result.hasErrors()) {
 			
@@ -66,9 +117,37 @@ public class ClubController {
 			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.BAD_REQUEST);
 		}
 		
+		try {
+			
+			
+			Club club1=this.club.save(club);
+			map.put("club", club1);
+			map.put("mensaje", "el cliente ha sido agregado con exito");
+			
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.BAD_REQUEST);
+		} catch (DataAccessException e) {
 		
-		map.put("club", this.club.save(club));
-		return new ResponseEntity<Map<String,Object>>(map,HttpStatus.BAD_REQUEST);
+			map.put("mensaje","error al realizar el Insert en la bd");
+			map.put("error", e.getMessage().concat(" : ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.INTERNAL_SERVER_ERROR);
+			
+		}	
+	}
+	
+	@DeleteMapping("/eliminar/{id}")
+	public ResponseEntity<?> delete(@PathVariable int id) {
+		Map <String,Object> mensajes=new HashMap<String,Object>();
+		try {
+			this.club.deleteById(id);
+		} catch (DataAccessException e) {
+			mensajes.put("Mensaje", "Error al eliminar el cliente de la bases de datos");
+			mensajes.put("error", "No existe el usuario en la bd");
+			return new ResponseEntity<Map<String,Object>>(mensajes,HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		mensajes.put("Mensaje", "Cliente eliminado de la base de datos");
+		return new ResponseEntity<Map<String,Object>>(mensajes,HttpStatus.OK);
+		
 	}
 	
 	
