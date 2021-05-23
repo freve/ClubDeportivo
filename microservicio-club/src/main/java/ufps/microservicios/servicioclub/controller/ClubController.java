@@ -107,7 +107,7 @@ public class ClubController {
 	
 	
 	@PostMapping("/guardar")
-	public ResponseEntity<?> save( @ModelAttribute @Valid Club club, BindingResult result,@RequestParam(required = false) MultipartFile foto1,@RequestParam(required=false) MultipartFile escudo){
+	public ResponseEntity<?> save( @RequestBody @Valid Club club, BindingResult result){
 		
 		
 		Map <String,Object> map=new HashMap<>();
@@ -129,28 +129,11 @@ public class ClubController {
 		
 		try {
 			
-			String uniqueFile;
-			
-			try {
-				uniqueFile=this.upload.copy(foto1);
-				club.setFoto(uniqueFile);
-				
-				uniqueFile=this.upload.copy(escudo);
-				club.setLogo(uniqueFile);
-				
-			} catch (Exception e) {
-				map.put("mensaje","no se pudo subir los archivos multimedia");
-				map.put("error", e.getMessage());
-				return new ResponseEntity<Map<String,Object>>(map,HttpStatus.INTERNAL_SERVER_ERROR);
-				
-			}
-			
-			
 			Club club1=this.club.save(club);
 			map.put("club", club1);
 			map.put("mensaje", "el cliente ha sido agregado con exito");
 			
-			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.CREATED);
+			return new ResponseEntity<Map<String,Object>>(map,HttpStatus.OK);
 		} catch (DataAccessException e) {
 		
 			map.put("mensaje","error al realizar el Insert en la bd");
